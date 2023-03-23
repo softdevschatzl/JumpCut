@@ -1,16 +1,24 @@
 {
+    "manifest_version": 2,
     "name": "JumpCut",
     "version": "1.0",
-    "description": "Highlights the snippet below a Google search result and allows you to click and scrolled immediately to the suggested text in the snippet.",
-    "permissions": [
-      "activeTab",
-      "tabs"
-    ],
-    "browser_action": {
-      "default_title": "Google Search Highlighter",
-      "default_icon": "icon.png",
-      "default_popup": "popup.html"
+    "description": "Highlights the Google search result snippet and when clicked, brings you to the page and scrolls to the snippet.",
+    "icons": {
+      "48": "icons/icon.png",
+      "128": "icons/icon.png"
     },
-    "manifest_version": 2
+    "permissions": [
+      "activeTab"
+    ],
+    "background": {
+      "scripts": ["background.js"],
+      "persistent": false
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://www.google.com/*"],
+        "js": ["content.js"]
+      }
+    ]
   }
   
