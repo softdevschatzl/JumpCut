@@ -5,6 +5,7 @@
     "description": "Does shit, mind your own business.",
     "permissions": [
         "activeTab",
+        "tabs",
         "scripting"
     ],
     "action": {
@@ -14,6 +15,9 @@
             "48": "icon.png",
             "128": "icon.png"
         }
+    },
+    "background": {
+        "service_worker": "backgroundScript.js"
     },
     "content_scripts": [
         {
