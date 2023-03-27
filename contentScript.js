@@ -1,11 +1,35 @@
 function openLink(event) {
   const link = event.target.closest('.g').querySelector('a');
-  if (link) {
-    const snippet = event.target.innerText;
-    const url = new URL(link.href)
-    url.searchParams.append('highlight_snippet', snippet);
-    window.open(url.href, '_blank');
+  const snippetElement = event.target.closest('.VwiC3b.yXK7lf.MUxGbd.yDYNvb.lyLwlc');
+  if (link && snippetElement) {
+    const encodedSnippetText = encodeURIComponent(snippetElement.innerText);
+    chrome.runtime.sendMessage({
+      action: 'openLink',
+      url: link.href,
+      encodedSnippetText,
+      injectScrollToSnippetScript: injectScrollToSnippetScript.toString(),
+    });
   }
+}
+
+function injectScrollToSnippetScript() {
+  const decodedSnippetText = decodeURIComponent(encodedSnippetText);
+
+  function scrollToSnippet() {
+    const bodyTextNodes = document.evaluate(
+      '//body//text()[contains(.,"' + decodedSnippetText + '")]',
+      document,
+      null,
+      XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+      null
+    );
+
+    if (bodyTextNodes.snapshotLength > 0) {
+      bodyTextNodes.snapshotItem(0).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', scrollToSnippet);
 }
 
 function highlightSnippets() {

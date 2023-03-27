@@ -4,12 +4,12 @@
     "version": "1.0",
     "description": "Does shit, mind your own business.",
     "permissions": [
-        "activeTab",
         "tabs",
+        "<all_urls>",
         "scripting"
     ],
     "action": {
-        "default_popup": "",
+        "default_popup": "popup.html",
         "default_icon": {
             "16": "icon.png",
             "48": "icon.png",
