@@ -7,29 +7,22 @@ function openLink(event) {
       action: 'openLink',
       url: link.href,
       encodedSnippetText,
-      injectScrollToSnippetScript: injectScrollToSnippetScript.toString(),
     });
   }
 }
 
-function injectScrollToSnippetScript() {
-  const decodedSnippetText = decodeURIComponent(encodedSnippetText);
+function scrollToSnippet() {
+  const bodyTextNodes = document.evaluate(
+    '//body//text()[contains(.,"' + decodedSnippetText + '")]',
+    document,
+    null,
+    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+    null
+  );
 
-  function scrollToSnippet() {
-    const bodyTextNodes = document.evaluate(
-      '//body//text()[contains(.,"' + decodedSnippetText + '")]',
-      document,
-      null,
-      XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-      null
-    );
-
-    if (bodyTextNodes.snapshotLength > 0) {
-      bodyTextNodes.snapshotItem(0).scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+  if (bodyTextNodes.snapshotLength > 0) {
+    bodyTextNodes.snapshotItem(0).scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-
-  window.addEventListener('DOMContentLoaded', scrollToSnippet);
 }
 
 function highlightSnippets() {

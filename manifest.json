@@ -5,7 +5,6 @@
     "description": "Does shit, mind your own business.",
     "permissions": [
         "tabs",
-        "<all_urls>",
         "scripting"
     ],
     "action": {
@@ -21,7 +20,7 @@
     },
     "content_scripts": [
         {
-            "matches": ["https://www.google.com/search?q=*"],
+            "matches": ["*://www.google.com/search*", "*://www.google.com/webhp*"],
             "js": ["contentScript.js"],
             "css": ["styles.css"]
         }
