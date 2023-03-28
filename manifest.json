@@ -4,8 +4,10 @@
     "version": "1.0",
     "description": "Does shit, mind your own business.",
     "permissions": [
+        "activeTab",
         "tabs",
-        "scripting"
+        "scripting",
+        "storage"
     ],
     "action": {
         "default_popup": "popup.html",
@@ -20,10 +22,13 @@
     },
     "content_scripts": [
         {
-            "matches": ["*://www.google.com/search*", "*://www.google.com/webhp*"],
+            "matches": ["*://www.google.com/search*", "*://www.google.com/webhp*", "*://*/*"],
             "js": ["contentScript.js"],
             "css": ["styles.css"]
         }
+    ],
+    "host_permissions": [
+        "*://*/*"
     ],
     "icons": {
         "16": "icon.png",
