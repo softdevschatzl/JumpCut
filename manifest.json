@@ -17,9 +17,6 @@
             "128": "icon.png"
         }
     },
-    "background": {
-        "service_worker": "backgroundScript.js"
-    },
     "content_scripts": [
         {
             "matches": ["*://www.google.com/search*", "*://www.google.com/webhp*", "*://*/*"],
@@ -27,6 +24,9 @@
             "css": ["styles.css"]
         }
     ],
+    "background": {
+        "service_worker": "background.js"
+    },
     "host_permissions": [
         "*://*/*"
     ],
