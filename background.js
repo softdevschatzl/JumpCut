@@ -1,37 +1,60 @@
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'openLink') {
-      const { url, encodedSnippetText, index } = request;
-  
-      chrome.tabs.create({ url: url }, (tab) => {
-        const scrollToSnippet = (encodedSnippetText, index) => {
-          const decodedSnippetText = decodeURIComponent(encodedSnippetText);
-          const bodyTextNodes = document.evaluate(
-            '//body//text()[contains(.,"' + decodedSnippetText + '")]',
-            document,
-            null,
-            XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-            null
-          );
-  
-          if (bodyTextNodes.snapshotLength > index) {
-            const textNode = bodyTextNodes.snapshotItem(index);
-            const snippetElem = textNode.parentElement;
-            snippetElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  
-            // Highlight the found snippet text
-            const highlighted = document.createElement('mark');
-            highlighted.style.backgroundColor = 'yellow';
-            textNode.parentElement.replaceChild(highlighted, textNode);
-            highlighted.appendChild(textNode);
-          }
-        };
-  
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          args: [encodedSnippetText, index],
-          function: scrollToSnippet,
-        });
-      });
-    }
+function injectContentScript(tabId) {
+  chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    files: ['contentScript.js'],
   });
-  
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (
+    changeInfo.status === 'complete' &&
+    (tab.url.startsWith('https://www.google.com/search') ||
+      tab.url.startsWith('https://www.google.com/webhp'))
+  ) {
+    injectContentScript(tabId);
+  }
+});
+
+console.log('background script running');
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'openLink') {
+    const { url, encodedSnippetText, index } = request;
+
+    chrome.tabs.create({ url: url }, (tab) => {
+      chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+        if (tabId === tab.id && changeInfo.status === 'complete') {
+          chrome.scripting.executeScript(
+            {
+              target: { tabId: tab.id },
+              files: ['contentScript.js'],
+            },
+            () => {
+              chrome.tabs.sendMessage(tab.id, {
+                action: 'scrollToSnippet',
+                encodedSnippetText: encodedSnippetText,
+                index: index,
+              });
+            }
+          );
+          chrome.tabs.onUpdated.removeListener(listener);
+        }
+      });
+    });
+  }
+});
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'contentScript') {
+    port.onMessage.addListener((message) => {
+      if (message.action === 'highlightSnippets') {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          console.log('Sending message to tab:', tabs[0].id);
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: 'highlightSnippets',
+          });
+        });
+      }
+    });
+  }
+});
