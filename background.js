@@ -31,7 +31,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             },
             () => {
               chrome.tabs.sendMessage(tab.id, {
-                action: 'scrollToSnippet',
+                action: 'highlightElementByText',
                 encodedSnippetText: encodedSnippetText,
                 index: index,
               });

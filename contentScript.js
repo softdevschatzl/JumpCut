@@ -17,29 +17,54 @@ function openLink(event) {
 }
 
 
-function scrollToSnippet(encodedSnippetText, index) {
+function highlightElementByText(encodedSnippetText, index) {
   const decodedSnippetText = decodeURIComponent(encodedSnippetText);
-  const bodyTextNodes = document.evaluate(
-    '//body//text()[contains(.,"' + decodedSnippetText + '")]',
-    document,
-    null,
-    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-    null
-  );
 
-  if (bodyTextNodes.snapshotLength > index) {
-    const textNode = bodyTextNodes.snapshotItem(index);
-    const snippetElem = textNode.parentElement;
-    snippetElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  function findElementsWithText(text) {
+    const elements = [];
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: function (node) {
+          const normalizedText = node.textContent.replace(/\s+/g, " ").trim();
+          if (normalizedText === text) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+          return NodeFilter.FILTER_REJECT;
+        },
+      },
+      false
+    );
 
-    // Highlight the found snippet text
-    const highlighted = document.createElement('mark');
-    console.log("highlighted: ", highlighted);
-    highlighted.style.backgroundColor = 'yellow';
-    textNode.parentElement.replaceChild(highlighted, textNode);
-    highlighted.appendChild(textNode);
+    let currentNode;
+    while ((currentNode = walker.nextNode())) {
+      elements.push(currentNode);
+    }
+    return elements;
+  }
+
+  function highlightElement(element) {
+    const highlightSpan = document.createElement("span");
+    highlightSpan.style.backgroundColor = "yellow";
+    highlightSpan.style.display = "inline";
+    element.parentNode.insertBefore(highlightSpan, element);
+    highlightSpan.appendChild(element);
+  }
+
+  const elementsWithText = findElementsWithText(decodedSnippetText);
+
+  if (elementsWithText.length > index) {
+    const targetElement = elementsWithText[index];
+    highlightElement(targetElement);
+  } else {
+    console.warn(
+      `No element found with the specified text and index: ${decodedSnippetText}, ${index}`
+    );
   }
 }
+
+
 
 function highlightSnippets() {
   const snippetElements = document.querySelectorAll('.VwiC3b.yXK7lf.MUxGbd.yDYNvb.lyLwlc');
@@ -73,8 +98,8 @@ function observeSearchResults() {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'scrollToSnippet') {
-    scrollToSnippet(message.encodedSnippetText, message.index);
+  if (message.action === 'highlightElementByText') {
+    highlightElementByText(message.encodedSnippetText, 0); // index was 'message.index'.
   }
 });
 
