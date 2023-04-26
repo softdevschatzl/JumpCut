@@ -16,7 +16,6 @@ function openLink(event) {
   }
 }
 
-
 function highlightElementByText(encodedSnippetText, index) {
   const decodedSnippetText = decodeURIComponent(encodedSnippetText);
 
@@ -64,8 +63,6 @@ function highlightElementByText(encodedSnippetText, index) {
   }
 }
 
-
-
 function highlightSnippets() {
   const snippetElements = document.querySelectorAll('.VwiC3b.yXK7lf.MUxGbd.yDYNvb.lyLwlc');
   snippetElements.forEach(element => {
@@ -99,7 +96,7 @@ function observeSearchResults() {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'highlightElementByText') {
-    highlightElementByText(message.encodedSnippetText, 0); // index was 'message.index'.
+    highlightElementByText(message.encodedSnippetText, message.index);
   }
 });
 
