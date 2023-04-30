@@ -17,13 +17,6 @@
             "128": "icon.png"
         }
     },
-    "content_scripts": [
-        {
-            "matches": ["*://www.google.com/search*", "*://www.google.com/webhp*", "*://*/*"],
-            "js": ["contentScript.js"],
-            "css": ["styles.css"]
-        }
-    ],
     "background": {
         "service_worker": "background.js"
     },
@@ -35,4 +28,5 @@
         "48": "icon.png",
         "128": "icon.png"
     }
-}
+  }
+  
