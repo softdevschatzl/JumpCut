@@ -1,4 +1,15 @@
+// This file adds styling to Google search result snippets 
+// (highlightSnippets) and upon observeResults,
+// adds event listeners to those snippets for onClick to open
+// that result in a new tab and send the message across tabs
+// to run the findTextAndScroll function to attempt to
+// locate the exact text that was in the snippet and 
+// scroll the page down to it.
+
+console.log("contentScript is running");    // console log
+
 function openLink(event) {
+  console.log("openLink is running");   // console log
   const link = event.target.closest('.g').querySelector('a');
   const snippetElement = event.target.closest('.VwiC3b.yXK7lf.MUxGbd.yDYNvb.lyLwlc');
   if (link && snippetElement) {
@@ -14,27 +25,46 @@ function openLink(event) {
   }
 }
 
-function scrollToSnippet(encodedSnippetText, index) {
+async function findTextAndScroll(encodedSnippetText, index) {
   const decodedSnippetText = decodeURIComponent(encodedSnippetText);
-  const bodyTextNodes = document.evaluate(
-    '//body//text()[contains(.,"' + decodedSnippetText + '")]',
-    document,
-    null,
-    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-    null
-  );
 
-  if (bodyTextNodes.snapshotLength > index) {
-    const textNode = bodyTextNodes.snapshotItem(index);
-    const snippetElem = textNode.parentElement;
-    snippetElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Wait for DOMContentLoaded event
+  await new Promise((resolve) => {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', resolve);
+    } else {
+      resolve();
+    }
+  });
 
-    // Highlight the found snippet text
-    const highlighted = document.createElement('mark');
-    highlighted.style.backgroundColor = 'yellow';
-    textNode.parentElement.replaceChild(highlighted, textNode);
-    highlighted.appendChild(textNode);
-  }
+  // Wait for additional time to allow dynamic content to load
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // Adjust the waiting time as needed
+
+  // Observe DOM changes and attempt to find and scroll to the text
+  let found = false;
+  const observer = new MutationObserver(() => {
+    if (!found) {
+      const elements = document.evaluate(`//*[contains(text(),"${decodedSnippetText}")]`, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+
+      if (elements.snapshotLength > 0) {
+        found = true;
+        observer.disconnect();
+
+        const element = elements.snapshotItem(0);
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  });
+
+  observer.observe(document, { childList: true, subtree: true });
+
+  // Set a timeout to stop observing after a certain time if the text is not found
+  setTimeout(() => {
+    if (!found) {
+      observer.disconnect();
+      console.warn(`Text not found: ${decodedSnippetText}`);
+    }
+  }, 10000); // Adjust the timeout duration as needed
 }
 
 function highlightSnippets() {
@@ -66,3 +96,9 @@ function observeSearchResults() {
 
 highlightSnippets();
 observeSearchResults();
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'findTextAndScroll') {
+    findTextAndScroll(request.encodedSnippetText, request.index);
+  }
+});
