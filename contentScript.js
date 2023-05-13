@@ -27,8 +27,12 @@ function openLink(event) {
 
 // This is where the real meat and potatoes is.
 async function findTextAndScroll(encodedSnippetText, index) {
-  const decodedSnippetText = decodeURIComponent(encodedSnippetText);
+  let decodedSnippetText = decodeURIComponent(encodedSnippetText);
   const sentences = decodedSnippetText.split('. ');
+
+  // Attempting to remove date-like strings that appear in the snippet,
+  // but do not appear in the text on the webpage.
+  decodedSnippetText = decodedSnippetText.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}\s+—/g, '');
 
   // Wait for DOMContentLoaded event.
   await new Promise((resolve) => {
@@ -63,6 +67,8 @@ async function findTextAndScroll(encodedSnippetText, index) {
 
           const element = elements.snapshotItem(0);
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          highlightElement(element);
           break;
         }
       }
@@ -81,13 +87,7 @@ async function findTextAndScroll(encodedSnippetText, index) {
 }
 
 function highlightElement(element) {
-  const originalBackgroundColor = element.style.backgroundColor;
-  element.style.backgroundColor = '#FFFF99'; // Dull yellow color, easy on the eyes.
-
-  // Reset the background color after a short delay.
-  setTimeout(() => {
-    element.style.backgroundColor = originalBackgroundColor;
-  }, 1000); // Highlights for 1 second. Might make it shorter.
+  element.style.backgroundColor = '#5ba9fd';
 }
 
 // Function that highlights the snippet text underneath the Google search result.
