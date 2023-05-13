@@ -2,7 +2,7 @@
 // and upon receiving that message, creates a new tab with the
 // specified URL. After waiting for the tab to completely load,
 // it sends a messages back to the contentScript with the action
-// findTextAndScroll from the contentScript
+// findTextAndScroll from the contentScript.
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'openLink') {

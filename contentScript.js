@@ -25,10 +25,12 @@ function openLink(event) {
   }
 }
 
+// This is where the real meat and potatoes is.
 async function findTextAndScroll(encodedSnippetText, index) {
   const decodedSnippetText = decodeURIComponent(encodedSnippetText);
+  const sentences = decodedSnippetText.split('. ');
 
-  // Wait for DOMContentLoaded event
+  // Wait for DOMContentLoaded event.
   await new Promise((resolve) => {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', resolve);
@@ -37,36 +39,58 @@ async function findTextAndScroll(encodedSnippetText, index) {
     }
   });
 
-  // Wait for additional time to allow dynamic content to load
-  await new Promise((resolve) => setTimeout(resolve, 2000)); // Adjust the waiting time as needed
+  // Observe changes in the DOM and wait for elements to appear
+  // to reduce unnecessary delays and ensure that all necessary
+  // elements are loaded.
+  await new Promise((resolve) => {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', resolve);
+    } else {
+      resolve();
+    }
+  });
 
-  // Observe DOM changes and attempt to find and scroll to the text
+  // Observe DOM changes and attempt to find and scroll to the text.
   let found = false;
   const observer = new MutationObserver(() => {
     if (!found) {
-      const elements = document.evaluate(`//*[contains(text(),"${decodedSnippetText}")]`, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+      for (let sentence of sentences) {
+        const elements = document.evaluate(`//*[contains(text(),"${sentence}")]`, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 
-      if (elements.snapshotLength > 0) {
-        found = true;
-        observer.disconnect();
+        if (elements.snapshotLength > 0) {
+          found = true;
+          observer.disconnect();
 
-        const element = elements.snapshotItem(0);
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const element = elements.snapshotItem(0);
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          break;
+        }
       }
     }
   });
 
   observer.observe(document, { childList: true, subtree: true });
 
-  // Set a timeout to stop observing after a certain time if the text is not found
+  // Set a timeout to stop observing after a certain time if the text is not found.
   setTimeout(() => {
     if (!found) {
       observer.disconnect();
       console.warn(`Text not found: ${decodedSnippetText}`);
     }
-  }, 10000); // Adjust the timeout duration as needed
+  }, 10000);
 }
 
+function highlightElement(element) {
+  const originalBackgroundColor = element.style.backgroundColor;
+  element.style.backgroundColor = '#FFFF99'; // Dull yellow color, easy on the eyes.
+
+  // Reset the background color after a short delay.
+  setTimeout(() => {
+    element.style.backgroundColor = originalBackgroundColor;
+  }, 1000); // Highlights for 1 second. Might make it shorter.
+}
+
+// Function that highlights the snippet text underneath the Google search result.
 function highlightSnippets() {
   const snippetElements = document.querySelectorAll('.VwiC3b.yXK7lf.MUxGbd.yDYNvb.lyLwlc');
   snippetElements.forEach(element => {
@@ -83,6 +107,7 @@ function highlightSnippets() {
   });
 }
 
+// Function to observe the search results ensuring efficiency of the search.
 function observeSearchResults() {
   const targetNode = document.querySelector('#search');
   if (targetNode) {
@@ -97,6 +122,7 @@ function observeSearchResults() {
 highlightSnippets();
 observeSearchResults();
 
+// Sends message to background.js for findTextAndScroll.
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'findTextAndScroll') {
     findTextAndScroll(request.encodedSnippetText, request.index);
