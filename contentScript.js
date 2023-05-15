@@ -82,6 +82,7 @@ async function findTextAndScroll(encodedSnippetText, index) {
     if (!found) {
       observer.disconnect();
       console.warn(`Text not found: ${decodedSnippetText}`);
+      window.confirm("Sorry, the text was not found. Our team is working on adding support for more websites so stay tuned!");
     }
   }, 10000);
 }
