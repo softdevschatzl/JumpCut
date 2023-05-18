@@ -77,14 +77,9 @@ async function findTextAndScroll(encodedSnippetText, index) {
 
   observer.observe(document, { childList: true, subtree: true });
 
-  // Set a timeout to stop observing after a certain time if the text is not found.
-  setTimeout(() => {
-    if (!found) {
-      observer.disconnect();
-      console.warn(`Text not found: ${decodedSnippetText}`);
-      window.confirm("Sorry, the text was not found. Our team is working on adding support for more websites so stay tuned!");
-    }
-  }, 10000);
+  window.addEventListener('beforeunload', (event) => {
+    observer.disconnect();
+  });
 }
 
 function highlightElement(element) {
