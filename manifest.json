@@ -5,9 +5,7 @@
     "description": "Highlights Google search result snippet and when clicked, brings you to the resulting page and scrolls to the text in the snippet!",
     "permissions": [
         "activeTab",
-        "tabs",
-        "scripting",
-        "storage"
+        "tabs"
     ],
     "action": {
         "default_popup": "popup.html",
