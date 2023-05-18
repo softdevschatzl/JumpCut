@@ -59,7 +59,7 @@ async function findTextAndScroll(encodedSnippetText, index) {
   const observer = new MutationObserver(() => {
     if (!found) {
       for (let sentence of sentences) {
-        const elements = document.evaluate(`//*[contains(text(),"${sentence}")]`, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        const elements = document.evaluate(`//text()[contains(.,'${sentence}')]`, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 
         if (elements.snapshotLength > 0) {
           found = true;
