@@ -65,7 +65,7 @@ async function findTextAndScroll(encodedSnippetText, index) {
           found = true;
           observer.disconnect();
 
-          const element = elements.snapshotItem(0);
+          const element = elements.snapshotItem(0).parentNode;
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
           highlightElement(element);
