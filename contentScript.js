@@ -70,6 +70,8 @@ async function findTextAndScroll(encodedSnippetText, index) {
 
           highlightElement(element);
           break;
+        } else {
+          console.log("Text not found. Text: ", decodedSnippetText);
         }
       }
     }
@@ -84,6 +86,7 @@ async function findTextAndScroll(encodedSnippetText, index) {
 
 function highlightElement(element) {
   element.style.backgroundColor = '#5ba9fd';
+  element.style.color = 'black'
 }
 
 // Function that highlights the snippet text underneath the Google search result.
