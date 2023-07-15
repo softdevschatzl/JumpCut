@@ -1,0 +1,50 @@
+async function findTextAndScroll(encodedSnippetText, index) {
+  let decodedSnippetText = decodeURIComponent(encodedSnippetText);
+  const sentences = decodedSnippetText.split('. ');
+
+  // Attempting to remove date-like strings that appear in the snippet,
+  // and do not appear in the text on the webpage.
+  decodedSnippetText = decodedSnippetText.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}\s+—/g, '');
+
+  // Wait for DOMContentLoaded event.
+  await new Promise((resolve) => {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', resolve);
+    } else {
+      resolve();
+    }
+  });
+
+  // Observe DOM changes and attempt to find and scroll to the text.
+  let found = false;
+  const observer = new MutationObserver(() => {
+    if (!found) {
+      for (let sentence of sentences) {
+        const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node = treeWalker.nextNode();
+        while (node) {
+          if (node.textContent.includes(sentence)) {
+            found = true;
+            observer.disconnect();
+
+            node.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            highlightElement(node.parentNode);
+            break;
+          }
+          node = treeWalker.nextNode();
+        }
+        if (found) break;
+        else {
+          console.log("Text not found. Text: ", decodedSnippetText);
+        }
+      }
+    }
+  });
+
+  observer.observe(document, { childList: true, subtree: true });
+
+  window.addEventListener('beforeunload', (event) => {
+    observer.disconnect();
+  });
+}

@@ -25,16 +25,15 @@ function openLink(event) {
   }
 }
 
-// This is where the real meat and potatoes is.
-async function findTextAndScroll(encodedSnippetText, index) {
+// This is where the real meat and potatoes begins.
+async function findTextAndScroll(encodedSnippetText) {
   let decodedSnippetText = decodeURIComponent(encodedSnippetText);
   const sentences = decodedSnippetText.split('. ');
 
-  // Attempting to remove date-like strings that appear in the snippet,
-  // but do not appear in the text on the webpage.
+  // Removing date-like strings that appear in the snippet, but not on the webpage.
   decodedSnippetText = decodedSnippetText.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}\s+—/g, '');
-
-  // Wait for DOMContentLoaded event.
+  
+  // Wait for DOMContent to be loaded.
   await new Promise((resolve) => {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', resolve);
@@ -43,34 +42,30 @@ async function findTextAndScroll(encodedSnippetText, index) {
     }
   });
 
-  // Observe changes in the DOM and wait for elements to appear
-  // to reduce unnecessary delays and ensure that all necessary
-  // elements are loaded.
-  await new Promise((resolve) => {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', resolve);
-    } else {
-      resolve();
-    }
-  });
-
-  // Observe DOM changes and attempt to find and scroll to the text.
+  // Using a TreeWalker, observe DOM changes and attempt to find and scroll to the text.
+  // By jumping from text node to text node in the body of the html, it should be simple
+  // to locate the text. When found, it will highlight the parent node of the text and 
+  // scroll to it.
   let found = false;
   const observer = new MutationObserver(() => {
     if (!found) {
       for (let sentence of sentences) {
-        const elements = document.evaluate(`//text()[contains(.,'${sentence}')]`, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node = treeWalker.nextNode();
+        while (node) {
+          if (node.textContent.includes(sentence)) {
+            found = true;
+            observer.disconnect();
 
-        if (elements.snapshotLength > 0) {
-          found = true;
-          observer.disconnect();
+            node.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center'});
 
-          const element = elements.snapshotItem(0).parentNode;
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-          highlightElement(element);
-          break;
-        } else {
+            highlightElement(node.parentNode);
+            break
+          }
+          node = treeWalker.nextNode();
+        }
+        if (found) break;
+        else {
           console.log("Text not found. Text: ", decodedSnippetText);
         }
       }
@@ -80,7 +75,7 @@ async function findTextAndScroll(encodedSnippetText, index) {
   observer.observe(document, { childList: true, subtree: true });
 
   window.addEventListener('beforeunload', (event) => {
-    observer.disconnect();
+    observe.disconnect();
   });
 }
 
