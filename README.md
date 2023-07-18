@@ -8,5 +8,4 @@ Directions:
 - JumpCut will (hopefully) automatically scroll you down to the exact text on the page
   as was in the snippet.
 
-  Constantly updating this extension to allow support for more and more types of
-  websites.
+Constantly updating this extension to allow support for more and more types of websites.
