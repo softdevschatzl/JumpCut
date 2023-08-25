@@ -1,0 +1,65 @@
+// Function to calculate the best match for the snippet text on the
+// website using a TreeWalker.
+// Deprecated as I wanted to account for number of words included
+// instead of plain character matching.
+function findBestMatch(decodedSnippetText) {
+  const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let bestMatch = null;
+  let highestScore = 0;
+
+  let node = treeWalker.nextNode();
+  while (node) {
+    const score = getMatchScore(node.textContent, decodedSnippetText);
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestMatch = node;
+    }
+
+    if (highestScore === 1) { // 1 means 100% match.
+      break;
+    }
+
+    node = treeWalker.nextNode();
+  }
+
+  return bestMatch;
+}
+
+// The other method I tried using word count as 
+// a parameter for matching. Didn't work that
+// well but I could tweak it later.
+function findBestMatch(decodedSnippetText) {
+  let words = decodedSnippetText.split(/\s+/);
+  let maxMatchCount = 0;
+  let bestMatchNode = null;
+
+  const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node = treeWalker.nextNode();
+  while (node) {
+    let nodeText = node.textContent; // Includes decorated text like boldened and underlined.
+    let matchCount = 0;
+    for (let word of words) {
+      if (nodeText.includes(word)) {
+        matchCount++;
+      }
+    }
+    if (matchCount > maxMatchCount) {
+      maxMatchCount = matchCount;
+      bestMatchNode = node;
+    }
+    node = treeWalker.nextNode();
+  }
+
+  // Adding a threshold to filter the yield of this function to try and
+  // increase its efficiency. Might remove if I see iy causing problems.
+  // Essentially, it helps filter out matches that aren't good enough.
+  // Attempt to help its accuracy, but something is better than nothing
+  // sometimes so we'll play it by ear.
+  const threshold = words.length * 0.5;
+  if (maxMatchCount >= threshold) {
+    return bestMatchNode;
+  } else {
+    return null;
+  }
+}

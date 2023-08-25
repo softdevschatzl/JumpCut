@@ -119,7 +119,9 @@ async function findTextAndScroll(encodedSnippetText) {
         }
       }
 
-      // If no exact match is found, we use our less stringent approach.
+      // If no exact match is found, we use our less stringent approach
+      // of splitting the decodedSnippetText and searching word by word
+      // until the best possible match is found.
       const match = findBestMatch(decodedSnippetText);
       if (match) {
         found = true;
