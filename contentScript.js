@@ -8,6 +8,11 @@
 
 console.log("contentScript is running");    // console log
 
+// Triggered when a Google search snippet is clicked, gets the URL of the
+// clicked search result, and sends a message to the background script
+// ('background.js') to open the link in a new tab and then calls the 
+// ('findTextAndScroll') function to scroll to the snippet text in that
+// newly opened tab.
 function openLink(event) {
   console.log("openLink is running");   // console log
   const link = event.target.closest('.g').querySelector('a');
@@ -25,7 +30,55 @@ function openLink(event) {
   }
 }
 
-// This is where the real meat and potatoes begins.
+// This is where the real meat and potatoes begins. Searches for the 
+// snippet text in the opened webpage, highlights the portion of the 
+// page where the text appears.
+// 1.) Uses a MutationObserver to keep looking for the snippet even
+// if the page's content changes or loads asynchronously. Scrolls to
+// the highlighted portion of the page.
+
+// Function to calculate the match score of a given string by splitting
+// and comparing to our given searchText.
+function getMatchScore(nodeText, searchText) {
+  const nodeWords = nodeText.split(/\s+/);
+  const searchWords = searchText.split(/\s+/);
+
+  let score = 0;
+  for (const word of searchWords) {
+    if (nodeWords.includes(word)) {
+      score += 1;
+    }
+  }
+
+  return score / searchWords.length;
+}
+
+// Function to calculate the best match for the snippet text on the
+// website using a TreeWalker.
+function findBestMatch(decodedSnippetText) {
+  const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let bestMatch = null;
+  let highestScore = 0;
+
+  let node = treeWalker.nextNode();
+  while (node) {
+    const score = getMatchScore(node.textContent, decodedSnippetText);
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestMatch = node;
+    }
+
+    if (highestScore === 1) { // 1 means 100% match.
+      break;
+    }
+
+    node = treeWalker.nextNode();
+  }
+
+  return bestMatch;
+}
+
 async function findTextAndScroll(encodedSnippetText) {
   let decodedSnippetText = decodeURIComponent(encodedSnippetText);
   const sentences = decodedSnippetText.split('. ');
@@ -60,14 +113,22 @@ async function findTextAndScroll(encodedSnippetText) {
             node.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center'});
 
             highlightElement(node.parentNode);
-            break
+            return;
           }
           node = treeWalker.nextNode();
         }
-        if (found) break;
-        else {
-          console.log("Text not found. Text: ", decodedSnippetText);
-        }
+      }
+
+      // If no exact match is found, we use our less stringent approach.
+      const match = findBestMatch(decodedSnippetText);
+      if (match) {
+        found = true;
+        observer.disconnect();
+        match.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightElement(match.parentNode);
+        return;
+      } else {
+        console.log("Text not found. Text: ", decodedSnippetText);
       }
     }
   });
@@ -75,7 +136,7 @@ async function findTextAndScroll(encodedSnippetText) {
   observer.observe(document, { childList: true, subtree: true });
 
   window.addEventListener('beforeunload', (event) => {
-    observe.disconnect();
+    observer.disconnect();
   });
 }
 
