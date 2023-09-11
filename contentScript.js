@@ -6,7 +6,7 @@
 // locate the exact text that was in the snippet and 
 // scroll the page down to it.
 
-console.log("contentScript is running");    // console log
+console.log("contentScript is running!");    // console log
 
 // Triggered when a Google search snippet is clicked, gets the URL of the
 // clicked search result, and sends a message to the background script
@@ -16,7 +16,7 @@ console.log("contentScript is running");    // console log
 function openLink(event) {
   console.log("openLink is running");   // console log
   const link = event.target.closest('.g').querySelector('a');
-  const snippetElement = event.target.closest('.VwiC3b.yXK7lf.MUxGbd.yDYNvb.lyLwlc');
+  const snippetElement = event.target.closest('.VwiC3b.yXK7lf.yDYNvb.W8l4ac.lyLwlc.lEBKkf');
   if (link && snippetElement) {
     const encodedSnippetText = encodeURIComponent(snippetElement.innerText);
     const index = Array.from(snippetElement.parentNode.children).indexOf(snippetElement);
@@ -149,7 +149,8 @@ function highlightElement(element) {
 
 // Function that highlights the snippet text underneath the Google search result.
 function highlightSnippets() {
-  const snippetElements = document.querySelectorAll('.VwiC3b.yXK7lf.MUxGbd.yDYNvb.lyLwlc');
+  console.log("highlightSnippets is running!")        // console log
+  const snippetElements = document.querySelectorAll('.VwiC3b.yXK7lf.yDYNvb.W8l4ac.lyLwlc.lEBKkf');
   snippetElements.forEach(element => {
     element.style.color = '#88c1ff';
     element.style.textDecoration = 'underline';
