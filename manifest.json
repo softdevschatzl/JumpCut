@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "JumpCut",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "description": "Highlights Google search result snippet and when clicked, brings you to the resulting page and scrolls to the text in the snippet!",
     "permissions": [
         "tabs"
