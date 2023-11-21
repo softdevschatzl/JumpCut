@@ -1,0 +1,27 @@
+Privacy Policy for JumpCut
+
+Last Updated: 11/20/2023
+
+1. Introduction
+
+Welcome to JumpCut. This privacy policy outlines how we collect, use, protect, and disclose information obtained from users of the JumpCut Chrome extension.
+
+2. Information Collection and Use
+
+JumpCut does not collect any personal information from its users. The extension operates entirely within the user's browser and does not transmit any data to external servers.
+
+3. Data Storage and Protection
+
+As JumpCut does not collect personal data, there is no storage or transfer of such data. All processing is done locally on the user's device.
+
+4. User Consent
+
+By using JumpCut, users consent to this privacy policy.
+
+5. Changes to This Privacy Policy
+
+We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.
+
+6. Contact Us
+
+If you have any questions about this Privacy Policy, please contact us at softdevschatzl.com.
