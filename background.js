@@ -1,3 +1,5 @@
+// background.js
+
 // This file listens for messages from the openLink function
 // and upon receiving that message, creates a new tab with the
 // specified URL. After waiting for the tab to completely load,

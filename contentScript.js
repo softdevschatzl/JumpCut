@@ -1,3 +1,5 @@
+// contentScript.js
+
 // This file adds styling to Google search result snippets 
 // (highlightSnippets) and upon observeResults,
 // adds event listeners to those snippets for onClick to open
@@ -16,7 +18,7 @@ console.log("contentScript is running!");    // console log
 function openLink(event) {
   console.log("openLink is running");   // console log
   const link = event.target.closest('.g').querySelector('a');
-  const snippetElement = event.target.closest('[class^="VwiC3b"]'); // Another div class for snippets: VwiC3b yXK7lf lyLwlc yDYNvb W8l4ac lEBKkf
+  const snippetElement = event.target.closest('.g').querySelector('.VwiC3b'); // Another div class for snippets: VwiC3b yXK7lf lyLwlc yDYNvb W8l4ac lEBKkf
   if (link && snippetElement) {
     const encodedSnippetText = encodeURIComponent(snippetElement.innerText);
     const index = Array.from(snippetElement.parentNode.children).indexOf(snippetElement);
@@ -82,6 +84,7 @@ function findBestMatch(decodedSnippetText) {
 async function findTextAndScroll(encodedSnippetText) {
   console.log("Searching...");
   let decodedSnippetText = decodeURIComponent(encodedSnippetText);
+  console.log("decodedSnippetText: ", decodedSnippetText);
   const sentences = decodedSnippetText.split('. ');
 
   // Removing date-like strings that appear in the snippet, but not on the webpage.
@@ -151,7 +154,7 @@ function highlightElement(element) {
 // Function that highlights the snippet text underneath the Google search result.
 function highlightSnippets() {
   console.log("highlightSnippets is running!")        // console log
-  const snippetElements = document.querySelectorAll('.VwiC3b.yXK7lf.yDYNvb.W8l4ac.lyLwlc, .VwiC3b.yXK7lf.yDYNvb.W8l4ac.lyLwlc.lEBKkf');
+  const snippetElements = document.querySelectorAll('.VwiC3b');
   snippetElements.forEach(element => {
     element.style.color = '#88c1ff';
     element.style.textDecoration = 'underline';
