@@ -10,15 +10,55 @@
 
 console.log("contentScript is running!");    // console log
 
+
+
+function highlightElement(element) {
+  element.style.backgroundColor = '#5ba9fd';
+  element.style.color = 'black'
+}
+
+// Function that highlights the snippet text underneath the Google search result.
+function highlightSnippets() {
+  console.log("highlightSnippets is running!")        // console log
+  const snippetElements = document.querySelectorAll('.VwiC3b, .Va3FIb');
+  snippetElements.forEach(element => {
+    if (!element.hasAttribute('data-listener-attached')) {
+      element.setAttribute('data-listener-attached', 'true');
+      element.style.color = '#88c1ff';
+      element.style.textDecoration = 'underline';
+      element.style.cursor = 'pointer';
+
+      element.addEventListener('click', openLink);
+      const emElements = element.querySelectorAll('em');
+      emElements.forEach(em => {
+        em.style.color = '#88c1ff';
+      });
+    }
+  });
+}
+
+// Function to observe the search results ensuring efficiency of the search.
+function observeSearchResults() {
+  const targetNode = document.querySelector('#search');
+  if (targetNode) {
+    const observer = new MutationObserver(() => {
+      highlightSnippets();
+    });
+
+    observer.observe(targetNode, { childList: true, subtree: true });
+  }
+}
+
 // Triggered when a Google search snippet is clicked, gets the URL of the
 // clicked search result, and sends a message to the background script
 // ('background.js') to open the link in a new tab and then calls the 
 // ('findTextAndScroll') function to scroll to the snippet text in that
 // newly opened tab.
 function openLink(event) {
+  event.stopPropagation();
   console.log("openLink is running");   // console log
-  const link = event.target.closest('.g').querySelector('a');
-  const snippetElement = event.target.closest('.g').querySelector('.VwiC3b'); // Another div class for snippets: VwiC3b yXK7lf lyLwlc yDYNvb W8l4ac lEBKkf
+  const link = event.target.closest('.g, .vdQmEd').querySelector('a');
+  const snippetElement = event.target.closest('.g, .vdQmEd').querySelector('.VwiC3b, .Va3FIb'); // Another div class for snippets: VwiC3b yXK7lf lyLwlc yDYNvb W8l4ac lEBKkf
   if (link && snippetElement) {
     const encodedSnippetText = encodeURIComponent(snippetElement.innerText);
     const index = Array.from(snippetElement.parentNode.children).indexOf(snippetElement);
@@ -145,42 +185,6 @@ async function findTextAndScroll(encodedSnippetText) {
     observer.disconnect();
   });
 }
-
-function highlightElement(element) {
-  element.style.backgroundColor = '#5ba9fd';
-  element.style.color = 'black'
-}
-
-// Function that highlights the snippet text underneath the Google search result.
-function highlightSnippets() {
-  console.log("highlightSnippets is running!")        // console log
-  const snippetElements = document.querySelectorAll('.VwiC3b');
-  snippetElements.forEach(element => {
-    element.style.color = '#88c1ff';
-    element.style.textDecoration = 'underline';
-    element.style.cursor = 'pointer';
-
-    element.addEventListener('click', openLink);
-
-    const emElements = element.querySelectorAll('em');
-    emElements.forEach(em => {
-      em.style.color = '#88c1ff';
-    });
-  });
-}
-
-// Function to observe the search results ensuring efficiency of the search.
-function observeSearchResults() {
-  const targetNode = document.querySelector('#search');
-  if (targetNode) {
-    const observer = new MutationObserver(() => {
-      highlightSnippets();
-    });
-
-    observer.observe(targetNode, { childList: true, subtree: true });
-  }
-}
-
 highlightSnippets();
 observeSearchResults();
 
