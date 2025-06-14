@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "JumpCut",
-    "version": "1.1.6",
+    "version": "1.1.7",
     "description": "Highlights Google search result snippet and when clicked, brings you to the resulting page and scrolls to the text in the snippet!",
     "permissions": [
         "tabs"
@@ -9,9 +9,9 @@
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
-            "16": "icon.png",
-            "48": "icon.png",
-            "128": "icon.png"
+            "16": "jumpcutlogo.png",
+            "48": "jumpcutlogo.png",
+            "128": "jumpcutlogo.png"
         }
     },
     "content_scripts": [
@@ -28,8 +28,8 @@
         "*://*/*"
     ],
     "icons": {
-        "16": "icon.png",
-        "48": "icon.png",
-        "128": "icon.png"
+        "16": "jumpcutlogo.png",
+        "48": "jumpcutlogo.png",
+        "128": "jumpcutlogo.png"
     }
 }
