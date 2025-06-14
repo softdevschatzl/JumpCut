@@ -8,7 +8,7 @@
 // locate the exact text that was in the snippet and 
 // scroll the page down to it.
 
-console.log("contentScript is running!");    // console log
+// console.log("contentScript is running!");    // console log
 
 
 
@@ -19,8 +19,8 @@ function highlightElement(element) {
 
 // Function that highlights the snippet text underneath the Google search result.
 function highlightSnippets() {
-  console.log("highlightSnippets is running!")        // console log
-  const snippetElements = document.querySelectorAll('.VwiC3b, .Va3FIb');
+  // console.log("highlightSnippets is running!");        // console log
+  const snippetElements = document.querySelectorAll('[data-snippet], .VwiC3b, [role="text"]');
   snippetElements.forEach(element => {
     if (!element.hasAttribute('data-listener-attached')) {
       element.setAttribute('data-listener-attached', 'true');
@@ -56,9 +56,15 @@ function observeSearchResults() {
 // newly opened tab.
 function openLink(event) {
   event.stopPropagation();
-  console.log("openLink is running");   // console log
-  const link = event.target.closest('.g, .vdQmEd').querySelector('a');
-  const snippetElement = event.target.closest('.g, .vdQmEd').querySelector('.VwiC3b, .Va3FIb'); // Another div class for snippets: VwiC3b yXK7lf lyLwlc yDYNvb W8l4ac lEBKkf
+  const container = event.target.closest('[data-sokoban-container], [data-header-feature], .g, div[data-hveid]');
+  if (!container) {
+    console.log('DEBUG: Container not found. Current element:', event.target);
+    return;
+  }
+
+  const link = container.querySelector('h3 > a, a[ping], a[data-ved]');
+  const snippetElement = event.target.closest('[data-snippet], .VwiC3b, [role="text"]');
+
   if (link && snippetElement) {
     const encodedSnippetText = encodeURIComponent(snippetElement.innerText);
     const index = Array.from(snippetElement.parentNode.children).indexOf(snippetElement);
@@ -69,6 +75,8 @@ function openLink(event) {
       encodedSnippetText: encodedSnippetText,
       index: index,
     });
+  } else {
+    console.log('DEBUG: Elements not found:', { link, snippetElement });
   }
 }
 
@@ -121,16 +129,54 @@ function findBestMatch(decodedSnippetText) {
   return bestMatch;
 }
 
+// i like this method better
+function findExactTextMatch(node, searchText) {
+  // normalize both texts
+  const normalizedNodeText = node.textContent.trim().replace(/\s+/g, ' ');
+  const normalizedSearchText = searchText.trim().replace(/\s+/g, ' ');
+  
+  // in a perfect world
+  if (normalizedNodeText === normalizedSearchText) {
+    return true;
+  }
+
+  // if no match, check for phrase match
+  const phraseRegex = new RegExp(`^.*?\\b(${escapeRegExp(normalizedSearchText)})\\b.*?$`);
+  const match = normalizedNodeText.match(phraseRegex);
+  
+  if (match) {
+    // only return true if the matched portion isn't part of a larger sentence
+    const beforeMatch = normalizedNodeText.substring(0, normalizedNodeText.indexOf(match[1])).trim();
+    const afterMatch = normalizedNodeText.substring(normalizedNodeText.indexOf(match[1]) + match[1].length).trim();
+    
+    // check if there's no text before or if text before ends with sentence terminator
+    const validPrefix = !beforeMatch || /[.!?]\s*$/.test(beforeMatch);
+    // check if there's no text after or if text after starts with sentence terminator
+    const validSuffix = !afterMatch || /^[.!?]\s*/.test(afterMatch);
+    
+    return validPrefix && validSuffix;
+  }
+  
+  return false;
+}
+
+// still don't know how regex works
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function findTextAndScroll(encodedSnippetText) {
   console.log("Searching...");
   let decodedSnippetText = decodeURIComponent(encodedSnippetText);
-  console.log("decodedSnippetText: ", decodedSnippetText);
-  const sentences = decodedSnippetText.split('. ');
-
-  // Removing date-like strings that appear in the snippet, but not on the webpage.
-  decodedSnippetText = decodedSnippetText.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}\s+—/g, '');
   
-  // Wait for DOMContent to be loaded.
+  // clean up text
+  decodedSnippetText = decodedSnippetText
+    .replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}\s+—/g, '')
+    .trim();
+  
+  const sentences = decodedSnippetText.split('. ').filter(s => s.length > 10);
+  
+  // wait for DOM
   await new Promise((resolve) => {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', resolve);
@@ -139,52 +185,132 @@ async function findTextAndScroll(encodedSnippetText) {
     }
   });
 
-  // Using a TreeWalker, observe DOM changes and attempt to find and scroll to the text.
-  // By jumping from text node to text node in the body of the html, it should be simple
-  // to locate the text. When found, it will highlight the parent node of the text and 
-  // scroll to it.
   let found = false;
-  const observer = new MutationObserver(() => {
-    if (!found) {
-      for (let sentence of sentences) {
-        const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        let node = treeWalker.nextNode();
-        while (node) {
-          if (node.textContent.includes(sentence)) {
-            found = true;
-            observer.disconnect();
-            console.log("Search completed: Text found.");
-            node.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center'});
+  let searchAttempts = 0;
+  const MAX_ATTEMPTS = 15;
+  const TIMEOUT_MS = 15000;
 
-            highlightElement(node.parentNode);
-            return;
-          }
-          node = treeWalker.nextNode();
+  // Initial search before setting up observer
+  const searchNodes = () => {
+    const textNodes = [];
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          if (node.textContent.trim().length < 10) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement.offsetParent === null) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
         }
       }
+    );
 
-      // If no exact match is found, we use our less stringent approach
-      // of splitting the decodedSnippetText and searching word by word
-      // until the best possible match is found.
+    while (walker.nextNode()) {
+      textNodes.push(walker.currentNode);
+    }
+
+    for (let sentence of sentences) {
+      const match = textNodes.find(node => 
+        findExactTextMatch(node, sentence) && 
+        node.parentElement.offsetHeight > 0
+      );
+
+      if (match) {
+        found = true;
+        console.log("Text found.");
+        match.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightElement(match.parentNode);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // try initial search
+  if (searchNodes()) {
+    return;
+  }
+
+  // set up observer for dynamic content
+  const observer = new MutationObserver(() => {
+    if (!found && searchAttempts < MAX_ATTEMPTS) {
+      searchAttempts++;
+      if (searchNodes()) {
+        observer.disconnect();
+      }
+    }
+
+    // try fuzzy match on last attempt
+    if (searchAttempts === MAX_ATTEMPTS && !found) {
       const match = findBestMatch(decodedSnippetText);
       if (match) {
         found = true;
-        observer.disconnect();
         match.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
         highlightElement(match.parentNode);
-        return;
       } else {
-        console.log("Text not found. Text: ", decodedSnippetText);
+        console.log("Text not found after all attempts:", decodedSnippetText);
       }
+      observer.disconnect();
     }
   });
 
-  observer.observe(document, { childList: true, subtree: true });
-
-  window.addEventListener('beforeunload', (event) => {
-    observer.disconnect();
+  // observe DOM changes
+  observer.observe(document.body, { 
+    childList: true, 
+    subtree: true,
+    characterData: true 
   });
+
+  // cleanup
+  window.addEventListener('beforeunload', () => observer.disconnect());
+  
+  // don't wanna take all day
+  setTimeout(() => {
+    if (!found) {
+      observer.disconnect();
+      console.log("Search timed out after 15 seconds, fucking off..");
+      // const match = findBestMatch(decodedSnippetText);
+      // if (match) {
+      //   found = true;
+      //   match.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      //   highlightElement(match.parentNode);
+      // } else {
+      //   console.log("No matches found after timeout:", decodedSnippetText);
+      // }
+    }
+  }, TIMEOUT_MS);
 }
+
+// 💀💀💀💀💀
+let tiltedTowers = null;
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const fuckleChuck = new Date().getMinutes();
+    if (fuckleChuck !== tiltedTowers) {
+      ingrownToenail();
+      tiltedTowers = fuckleChuck;
+    }
+  }
+});
+
+// i still have a conscience 
+function ingrownToenail() {
+  const chuckleFuck = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+  const fuckleChuck = new Date().getMinutes().toString().padStart(2, '0');
+  
+  if (chuckleFuck === fuckleChuck) {
+    const nonsense = [
+        "whoever's using this browser now has snake aids",
+        "redtail catfish get my goat man",
+        "when's the last time you ",
+        "Im tired of motherfuckers in school tellin me always in the barbershop Chief Keef aint bout this Chief Keef aint bout that My boy a BD on fuckin Lamron and them He he they say that n***a dont be puttin in no work Shut the fuck up yall n***as aint know shit All yall motherfuckers talkin about Chief Keef aint no hitter Chief Keef aint this Chief Keef a fake Shut the fuck up yall dont live with that n***a Yall know that n***a got caught with a ratchet Shootin at the police and shit n***a been on probation since fuckin I dont know when Motherfucker stop fuckin playin him like that Them n***as savages out there If I catch another motherfucker talkin sweet about Chief Keef Im fuckin beatin they ass Im not fuckin playin no more Know them n***as roll with Lil Reese and them"
+    ];
+    console.log(nonsense[Math.floor(Math.random() * nonsense.length)]);
+  }
+}
+
+// where we do shit
 highlightSnippets();
 observeSearchResults();
 
